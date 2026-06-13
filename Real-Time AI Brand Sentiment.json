@@ -1,0 +1,258 @@
+{
+  "name": "Real-Time AI Brand Sentiment",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        -48
+      ],
+      "id": "4adada1a-fe67-4ef3-bc98-f522e5323484",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8e6a46fa-1050-4624-8704-dcc3693df2e4",
+              "name": "Body",
+              "value": "The new update is completely broken, my team is frustrated and we want a refund!",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -16,
+        -48
+      ],
+      "id": "0e563d73-2e70-4d6f-832c-23c07edf1e2d",
+      "name": "Ingest Live Review (Test)"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        208,
+        128
+      ],
+      "id": "bc874e3a-277d-46cd-a979-200f9ef76971",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "zhnhxmO2IM4KWL6M",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the sentiment of this review. Respond with exactly one word in all caps: either POSITIVE or NEGATIVE. Here is the review:  {{ $json.Body }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        208,
+        -48
+      ],
+      "id": "a3acb831-e072-4a5b-8bf2-26dc7409fb94",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "NEGATIVE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f1429c2a-211e-4064-a633-27a97a422e19"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "538efe4f-9870-417c-afc6-8465ef00a455",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "POSITIVE ",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        -48
+      ],
+      "id": "a2255753-feb5-4711-8a77-f137da1703b8",
+      "name": "Route by Sentiment"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5731b1fb-b856-4cf6-a9b6-1c5b32a1e538",
+              "name": "",
+              "value": "🚨 Urgent: Negative Review detected from customer!",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        768,
+        -144
+      ],
+      "id": "766d8d51-5db6-4903-a423-405ce3c93473",
+      "name": "Send Emergency Slack Alert"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b66d31a6-3134-471b-9de1-cb19653e8a26",
+              "name": "Action",
+              "value": "Saved 5-star review for marketing team",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        768,
+        48
+      ],
+      "id": "dd6d41cb-4fe3-4fd7-a45a-23836fb312c4",
+      "name": "Save for Marketing"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Ingest Live Review (Test)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ingest Live Review (Test)": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Route by Sentiment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Sentiment": {
+      "main": [
+        [
+          {
+            "node": "Send Emergency Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save for Marketing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2704dc00-3648-42b0-b60b-b8eb71b11aa2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8d9af5daeb311d226fad8e754159f50363689d4eae81c4e01a5964dec669a67d"
+  },
+  "id": "21MmscY1f2aYCQr8",
+  "tags": []
+}
